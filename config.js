@@ -8,4 +8,4 @@
 ------------------------------------------------------------------- */
 
 const SUPABASE_URL = "PASTE_YOUR_SUPABASE_PROJECT_URL_HERE";
-const SUPABASE_ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_PUBLIC_KEY_HERE";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0aWptZmtrdGZqb2l1YWhzemlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5NDgxMTEsImV4cCI6MjA5NjUyNDExMX0.-lPni2MzjtteVUhf_4TvORl3MU9K5wSyEKcAaBImtKE";
