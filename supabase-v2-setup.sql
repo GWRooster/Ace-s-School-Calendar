@@ -28,6 +28,7 @@ create table if not exists notes (
   created_at timestamptz not null default now()
 );
 create index if not exists notes_note_date_idx on notes (note_date);
+alter table notes add column if not exists slot text not null default 'am';
 
 -- Rotation day for each school date (updated from the Schedule screen)
 create table if not exists schedule_days (

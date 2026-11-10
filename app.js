@@ -170,7 +170,9 @@
     out.sort(function (a, b) { return (a.time || '99:99').localeCompare(b.time || '99:99'); });
     return out;
   }
-  function notesFor(k) { return NOTES.filter(function (n) { return n.note_date === k; }); }
+  function slotOf(n) { return n.slot === 'pm' ? 'pm' : 'am'; }
+  function notesFor(k, slot) { return NOTES.filter(function (n) { return n.note_date === k && (!slot || slotOf(n) === slot); }); }
+  function wNote(n) { return '<div class="wnote">' + NOTE_ICON + '<span>' + esc(n.body) + '</span></div>'; }
 
   // ---------- render: toolbar ----------
   var $ = function (id) { return document.getElementById(id); };
@@ -213,11 +215,11 @@
   function renderWeek() {
     var s = sunday(parse(S.cursor)), h = '<div class="week">';
     for (var i = 0; i < 7; i++) {
-      var d = add(s, i), k = key(d), rot = rotation(k), ents = dayEntries(k), nn = notesFor(k).length;
+      var d = add(s, i), k = key(d), rot = rotation(k), ents = dayEntries(k);
       h += '<div class="col' + (rot ? ' r' + rot : '') + (k === TODAY ? ' today' : '') + '" data-open="' + k + '" role="button" tabindex="0" aria-label="Open ' + DOW_LONG[d.getDay()] + ' ' + MON[d.getMonth()] + ' ' + d.getDate() + '">';
       h += '<div class="col-head"><div class="top"><div class="d"><span class="num">' + d.getDate() + '</span><span class="dow">' + DOW[i] + '</span></div>' + pill(rot) + '</div>';
       termsFor(k).forEach(function (t) { h += '<span class="term-line">' + esc(t) + '</span>'; });
-      if (nn) h += '<span class="notes-pill">' + NOTE_ICON + nn + ' note' + (nn > 1 ? 's' : '') + '</span>';
+      notesFor(k, 'am').forEach(function (n) { h += wNote(n); });
       h += '</div><div class="items">';
       if (!ents.length) h += '<div class="empty">Nothing scheduled</div>';
       ents.forEach(function (e) {
@@ -227,7 +229,7 @@
         if (e.kind === 'block' && e.due) e.attached.forEach(function (a) { h += '<span class="badge" style="margin-left:13px">' + esc(a.type) + '</span>'; });
         h += '</div></div>';
       });
-      h += '</div></div>';
+      h += '</div><div class="col-foot">' + notesFor(k, 'pm').map(wNote).join('') + '</div></div>';
     }
     return h + '</div>';
   }
@@ -246,11 +248,12 @@
       });
       termsFor(k).forEach(function (t) { chips.unshift({ due: false, cat: 'school', label: t, term: true }); });
       chips.sort(function (a, b) { return (b.due ? 1 : 0) - (a.due ? 1 : 0); });
-      var nn = notesFor(k).length; if (nn) chips.push({ due: false, cat: 'school', label: nn + ' note' + (nn > 1 ? 's' : '') });
+      notesFor(k, 'am').forEach(function (n) { chips.unshift({ note: true, label: n.body }); });
+      notesFor(k, 'pm').forEach(function (n) { chips.push({ note: true, label: n.body }); });
       var more = chips.length - 3;
       h += '<button class="cell' + (out ? ' out' : '') + (k === TODAY ? ' today' : '') + '" data-open="' + k + '" aria-label="Open ' + MON[d.getMonth()] + ' ' + d.getDate() + '">';
       h += '<div class="in"><div class="top"><span class="n">' + d.getDate() + '</span>' + (rot ? pill(rot, 'sm') : '') + '</div>';
-      chips.slice(0, 3).forEach(function (ch) { h += '<span class="chip' + (ch.due ? ' due' : '') + '"><span class="dot ' + ch.cat + '" style="width:6px;height:6px"></span>' + esc(ch.label) + '</span>'; });
+      chips.slice(0, 3).forEach(function (ch) { h += ch.note ? '<span class="chip note">' + NOTE_ICON + esc(ch.label) + '</span>' : '<span class="chip' + (ch.due ? ' due' : '') + '"><span class="dot ' + ch.cat + '" style="width:6px;height:6px"></span>' + esc(ch.label) + '</span>'; });
       if (more > 0) h += '<span class="more">+' + more + ' more</span>';
       h += '</div></button>';
     }
@@ -324,13 +327,18 @@
 
     h += '<div class="panel notes"><div class="panel-h"><h3>Notes</h3><span class="hint">' + notes.length + '</span></div><div class="panel-b">';
     if (!notes.length) h += '<div class="empty">No notes for this day.</div>';
-    notes.forEach(function (n) {
-      var when = new Date(n.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-      h += '<div class="note"><span class="who"><span>' + esc(n.author || 'Someone') + ' · ' + when + '</span>' + delBtn(n, 'note') + '</span><span class="txt">' + esc(n.body) + '</span></div>';
+    [['am', 'AM · top of the day'], ['pm', 'PM · end of the day']].forEach(function (g) {
+      var list = notesFor(k, g[0]); if (!list.length) return;
+      h += '<div class="note-group">' + g[1] + '</div>';
+      list.forEach(function (n) {
+        var when = new Date(n.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        h += '<div class="note"><span class="who"><span>' + esc(n.author || 'Someone') + ' · ' + when + '</span>' + delBtn(n, 'note') + '</span><span class="txt">' + esc(n.body) + '</span></div>';
+      });
     });
     var defName = session ? 'Ace' : (load('aceCal.name') || '');
     h += '<form id="noteForm" style="display:flex;flex-direction:column;gap:8px">';
     h += '<div class="note-add"><textarea id="fNote" placeholder="Add a note…" aria-label="New note"></textarea></div>';
+    h += '<div class="seg slot" role="group" aria-label="Note placement"><button type="button" data-slot="am" aria-pressed="' + (S.noteSlot !== 'pm') + '">AM · top</button><button type="button" data-slot="pm" aria-pressed="' + (S.noteSlot === 'pm') + '">PM · bottom</button></div>';
     h += '<div class="note-add"><input id="fAuthor" type="text" value="' + esc(defName) + '" placeholder="Name (optional)" aria-label="Name" style="flex:1;min-width:0;height:40px;border-radius:10px;border:1px solid var(--field-line);background:var(--field);padding:0 10px;font-size:14px;color:var(--fg)"><button type="submit" class="btn">Add note</button></div>';
     h += '</form></div></div></div></div></div></div>';
     return h;
@@ -559,6 +567,8 @@
     var dd = t.closest('[data-day]');
     if (dd) { var nk = key(add(parse(S.open), +dd.getAttribute('data-day'))); S.open = nk; S.cursor = nk; S.pendingDel = null; render(); return; }
     var c = t.closest('[data-cat]'); if (c) { S.cat = c.getAttribute('data-cat'); renderSheet(); return; }
+    var sl = t.closest('[data-slot]');
+    if (sl) { S.noteSlot = sl.getAttribute('data-slot'); document.querySelectorAll('[data-slot]').forEach(function (b) { b.setAttribute('aria-pressed', b === sl); }); return; }
     var act = t.closest('[data-act]');
     if (act) {
       var a = act.getAttribute('data-act');
@@ -626,7 +636,11 @@
       if (!txt) return;
       if (!sb) { toast('Not connected, so the note cannot be saved.'); return; }
       if (author && !session) save('aceCal.name', author);
-      var n = await sb.from('notes').insert({ note_date: S.open, body: txt, author: author || null });
+      var n = await sb.from('notes').insert({ note_date: S.open, body: txt, author: author || null, slot: S.noteSlot === 'pm' ? 'pm' : 'am' });
+      if (n.error && /slot/i.test(n.error.message)) {
+        n = await sb.from('notes').insert({ note_date: S.open, body: txt, author: author || null });
+        if (!n.error) toast('Saved as AM. Run supabase-notes-ampm.sql to enable PM notes.');
+      }
       if (n.error) { toast('Note not saved: ' + n.error.message); return; }
       await loadAll(); toast('Note added');
     }

@@ -143,6 +143,15 @@ h1{margin:2px 0 0;font-family:var(--display);font-size:30px;font-weight:700;lett
 .x.confirm{color:var(--danger);background:var(--seg)}
 .side{display:flex;flex-direction:column;gap:18px;min-height:0;overflow-y:auto;padding-bottom:2px}
 .side>.panel{flex-shrink:0}
+.wnote{display:flex;gap:6px;align-items:flex-start;font-size:12px;line-height:16px;font-weight:500;padding:6px 8px;border-radius:10px;background:var(--surface);border:1px solid var(--line);color:var(--fg);overflow-wrap:anywhere;text-align:left}
+.wnote svg{flex-shrink:0;margin-top:2px;color:var(--muted)}
+.col-foot{margin-top:auto;border-top:1px solid var(--line);padding:8px;min-height:44px;display:flex;flex-direction:column;gap:6px;box-sizing:border-box}
+.col-foot:empty::after{content:"PM notes";font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);opacity:.6;align-self:center;margin-top:6px}
+.col.r1 .col-foot{background:var(--p1s)}.col.r2 .col-foot{background:var(--p2s)}.col.r3 .col-foot{background:var(--p3s)}.col.r4 .col-foot{background:var(--p4s)}.col.r5 .col-foot{background:var(--p5s)}.col.r6 .col-foot{background:var(--p6s)}.col.r7 .col-foot{background:var(--p7s)}
+.chip.note{background:var(--note);font-weight:500}
+.chip.note svg{flex-shrink:0;width:10px;height:10px}
+.note-group{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:6px 2px 0}
+.seg.slot{align-self:flex-start}
 .side>.panel.notes{flex:1 0 auto;min-height:220px}
 form.add{padding:16px 18px;display:flex;flex-direction:column;gap:12px}
 .field{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:600;color:var(--muted)}
