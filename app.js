@@ -157,7 +157,7 @@
         var L = letters[b.n - 1]; if (!L) return;
         var sub = CFG.subjects[L] || { name: L, room: '' };
         var att = school.filter(function (i) { return i.subject === L; });
-        out.push({ kind: 'block', time: b.start, range: b.range, room: sub.room, label: 'Block ' + b.n + ' · ' + sub.name, due: att.length > 0, attached: att });
+        out.push({ kind: 'block', time: b.start, range: b.range, room: sub.room, label: sub.name, due: att.length > 0, attached: att });
       });
     }
     school.filter(function (i) { return !i.subject || letters.indexOf(i.subject) < 0; }).forEach(function (i) {
@@ -307,8 +307,8 @@
         if (S.cat === 'school') {
           var letters = rot ? (CFG.dayLetters[rot] || []) : [];
           h += '<div class="two"><label class="field" for="fBlock">Attach to class<select id="fBlock">';
-          CFG.blocks.forEach(function (b) { var L = letters[b.n - 1]; if (L) h += '<option value="' + L + '">Block ' + b.n + ' · ' + esc(subjName(L)) + '</option>'; });
-          h += '<option value="">No block (set a time)</option></select></label>';
+          CFG.blocks.forEach(function (b) { var L = letters[b.n - 1]; if (L) h += '<option value="' + L + '">' + esc(subjName(L)) + ' · ' + fmtTime(b.start) + '</option>'; });
+          h += '<option value="">No class (set a time)</option></select></label>';
           h += '<label class="field" for="fType">Type<select id="fType">' + SCHOOL_TYPES.map(function (t) { return '<option>' + t + '</option>'; }).join('') + '</select></label></div>';
           h += '<label class="field" for="fDetails">Details<input id="fDetails" type="text" placeholder="e.g. Workbook p. 42–44" autocomplete="off"></label>';
           h += '<label class="field" for="fTime">Time<input id="fTime" type="time"' + (letters.length ? ' disabled' : '') + '></label>';
@@ -322,7 +322,7 @@
       h += '</div>';
     }
 
-    h += '<div class="panel" style="flex:1 1 0;min-height:220px"><div class="panel-h"><h3>Notes</h3><span class="hint">' + notes.length + '</span></div><div class="panel-b">';
+    h += '<div class="panel notes"><div class="panel-h"><h3>Notes</h3><span class="hint">' + notes.length + '</span></div><div class="panel-b">';
     if (!notes.length) h += '<div class="empty">No notes for this day.</div>';
     notes.forEach(function (n) {
       var when = new Date(n.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
