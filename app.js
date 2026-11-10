@@ -121,6 +121,7 @@
     NOTES = res[3].data;
     setStatus('Live · synced across devices');
     render();
+    if (!S.scrolled && isPhone() && S.view === 'week' && !S.open) { S.scrolled = true; var tc = document.querySelector('.col.today'); if (tc) tc.scrollIntoView({ block: 'start' }); }
   }
 
   var reloadTimer;
@@ -167,6 +168,7 @@
     ITEMS.filter(function (i) { return i.cat !== 'school' && occurs(i, k); }).forEach(function (i) {
       out.push({ kind: 'item', item: i, time: i.time || '', label: i.title, cat: i.cat, due: false });
     });
+    if (S.mode === 'ios') out = out.filter(function (e) { return !(e.kind === 'item' && e.cat === 'home'); });
     out.sort(function (a, b) { return (a.time || '99:99').localeCompare(b.time || '99:99'); });
     return out;
   }
@@ -176,6 +178,7 @@
 
   // ---------- render: toolbar ----------
   var $ = function (id) { return document.getElementById(id); };
+  function isPhone() { return window.matchMedia && matchMedia('(max-width: 700px)').matches; }
   function isDark() {
     var t = document.documentElement.getAttribute('data-theme');
     if (t) return t === 'dark';
@@ -241,20 +244,20 @@
     var h = '<div class="month"><div class="mhead">' + DOW.map(function (d) { return '<span>' + d + '</span>'; }).join('') + '</div><div class="mgrid">';
     for (var i = 0; i < cells; i++) {
       var d = add(start, i), k = key(d), out = d.getMonth() !== c.getMonth(), rot = rotation(k);
-      var chips = [];
+      // Month view: school assignments only; everything else is counted
+      var chips = [], other = 0;
       dayEntries(k).forEach(function (e) {
-        if (e.kind === 'block') e.attached.forEach(function (a) { chips.push({ due: true, cat: 'school', label: subjName(a.subject) + ' · ' + a.type }); });
-        else if (e.kind === 'item') chips.push({ due: e.due, cat: e.cat, label: e.label });
+        if (e.kind === 'block') e.attached.forEach(function (a) { chips.push(subjName(a.subject) + ' · ' + a.type); });
+        else if (e.kind === 'item' && e.cat === 'school') chips.push(e.label);
+        else if (e.kind === 'item') other++;
       });
-      termsFor(k).forEach(function (t) { chips.unshift({ due: false, cat: 'school', label: t, term: true }); });
-      chips.sort(function (a, b) { return (b.due ? 1 : 0) - (a.due ? 1 : 0); });
-      notesFor(k, 'am').forEach(function (n) { chips.unshift({ note: true, label: n.body }); });
-      notesFor(k, 'pm').forEach(function (n) { chips.push({ note: true, label: n.body }); });
-      var more = chips.length - 3;
+      other += notesFor(k).length;
+      var shown = chips.slice(0, 3), more = other + (chips.length - shown.length);
       h += '<button class="cell' + (out ? ' out' : '') + (k === TODAY ? ' today' : '') + '" data-open="' + k + '" aria-label="Open ' + MON[d.getMonth()] + ' ' + d.getDate() + '">';
       h += '<div class="in"><div class="top"><span class="n">' + d.getDate() + '</span>' + (rot ? pill(rot, 'sm') : '') + '</div>';
-      chips.slice(0, 3).forEach(function (ch) { h += ch.note ? '<span class="chip note">' + NOTE_ICON + esc(ch.label) + '</span>' : '<span class="chip' + (ch.due ? ' due' : '') + '"><span class="dot ' + ch.cat + '" style="width:6px;height:6px"></span>' + esc(ch.label) + '</span>'; });
-      if (more > 0) h += '<span class="more">+' + more + ' more</span>';
+      termsFor(k).forEach(function (t) { h += '<span class="term-line">' + esc(t) + '</span>'; });
+      shown.forEach(function (c) { h += '<span class="chip due">' + esc(c) + '</span>'; });
+      if (more > 0) h += '<span class="more">+' + more + '</span>';
       h += '</div></button>';
     }
     return h + '</div></div>';
@@ -325,7 +328,12 @@
       h += '</div>';
     }
 
-    h += '<div class="panel notes"><div class="panel-h"><h3>Notes</h3><span class="hint">' + notes.length + '</span></div><div class="panel-b">';
+    var phone = isPhone(), notesOpen = !phone || S.notesOpen;
+    h += '<div class="panel notes">';
+    if (phone) h += '<button type="button" class="panel-h notes-tg" data-notestoggle="1" aria-expanded="' + notesOpen + '"><h3>Notes (' + notes.length + ')</h3><span class="hint">' + (notesOpen ? 'Hide' : 'Show · add a note') + '</span></button>';
+    else h += '<div class="panel-h"><h3>Notes</h3><span class="hint">' + notes.length + '</span></div>';
+    if (notesOpen) {
+    h += '<div class="panel-b">';
     if (!notes.length) h += '<div class="empty">No notes for this day.</div>';
     [['am', 'AM · top of the day'], ['pm', 'PM · end of the day']].forEach(function (g) {
       var list = notesFor(k, g[0]); if (!list.length) return;
@@ -340,7 +348,9 @@
     h += '<div class="note-add"><textarea id="fNote" placeholder="Add a note…" aria-label="New note"></textarea></div>';
     h += '<div class="seg slot" role="group" aria-label="Note placement"><button type="button" data-slot="am" aria-pressed="' + (S.noteSlot !== 'pm') + '">AM · top</button><button type="button" data-slot="pm" aria-pressed="' + (S.noteSlot === 'pm') + '">PM · bottom</button></div>';
     h += '<div class="note-add"><input id="fAuthor" type="text" value="' + esc(defName) + '" placeholder="Name (optional)" aria-label="Name" style="flex:1;min-width:0;height:40px;border-radius:10px;border:1px solid var(--field-line);background:var(--field);padding:0 10px;font-size:14px;color:var(--fg)"><button type="submit" class="btn">Add note</button></div>';
-    h += '</form></div></div></div></div></div></div>';
+    h += '</form></div>';
+    }
+    h += '</div></div></div></div></div>';
     return h;
   }
 
@@ -406,7 +416,7 @@
     else if (S.open) root.innerHTML = daySheet();
     else { root.innerHTML = ''; return; }
     var nw = root.querySelector('.pad, .panel-b'); if (nw && keepFocus) nw.scrollTop = scrollTop;
-    if (!keepFocus) {
+    if (!keepFocus && !isPhone()) {
       var f = S.sheet === 'signin' ? $('siEmail') : S.sheet ? null : $(S.mode === 'pc' && session ? (S.cat === 'school' ? 'fDetails' : 'fTitle') : 'fNote');
       if (f) f.focus();
     }
@@ -540,7 +550,8 @@
     S.cursor = key(S.view === 'week' ? add(c, 7 * n) : new Date(c.getFullYear(), c.getMonth() + n, 1));
     render();
   }
-  function openDay(k) { S.open = k; S.sheet = null; S.pendingDel = null; render(); }
+  function openDay(k) { S.open = k; S.sheet = null; S.pendingDel = null; S.notesOpen = false; render(); }
+  if (window.matchMedia) { var mq = matchMedia('(max-width: 700px)'); if (mq.addEventListener) mq.addEventListener('change', function () { render(); }); }
   function closeSheet() { if (S.sheet) S.sheet = null; else S.open = null; S.pendingDel = null; S.parsed = null; render(); }
 
   $('prev').onclick = function () { shift(-1); };
@@ -566,6 +577,7 @@
     if (t.closest('[data-signin]')) { S.sheet = 'signin'; render(); return; }
     var dd = t.closest('[data-day]');
     if (dd) { var nk = key(add(parse(S.open), +dd.getAttribute('data-day'))); S.open = nk; S.cursor = nk; S.pendingDel = null; render(); return; }
+    if (t.closest('[data-notestoggle]')) { S.notesOpen = !S.notesOpen; renderSheet(true); return; }
     var c = t.closest('[data-cat]'); if (c) { S.cat = c.getAttribute('data-cat'); renderSheet(); return; }
     var sl = t.closest('[data-slot]');
     if (sl) { S.noteSlot = sl.getAttribute('data-slot'); document.querySelectorAll('[data-slot]').forEach(function (b) { b.setAttribute('aria-pressed', b === sl); }); return; }
