@@ -1,69 +1,66 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-<title>School Calendar</title>
-<link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ace's Calendar">
+<title>Ace's Calendar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="wrap">
-    <header class="top">
-      <h1>School Calendar</h1>
-      <div class="nav-controls">
-        <button id="prevMonth" aria-label="Previous month">‹</button>
-        <span id="monthLabel"></span>
-        <button id="nextMonth" aria-label="Next month">›</button>
+<div class="wrap">
+  <header class="bar">
+    <div class="bar-l">
+      <div>
+        <div class="eyebrow">Ace's Calendar</div>
+        <h1 id="range">&nbsp;</h1>
       </div>
-    </header>
-
-    <div id="configWarning"></div>
-
-    <div class="legend">
-      <span class="chip"><span class="swatch" style="background:var(--day1)"></span>Day 1</span>
-      <span class="chip"><span class="swatch" style="background:var(--day2)"></span>Day 2</span>
-      <span class="chip"><span class="swatch" style="background:var(--day3)"></span>Day 3</span>
-      <span class="chip"><span class="swatch" style="background:var(--day4)"></span>Day 4</span>
-      <span class="chip"><span class="swatch" style="background:var(--day5)"></span>Day 5</span>
-      <span class="chip"><span class="swatch" style="background:var(--day6)"></span>Day 6</span>
-      <span class="chip"><span class="swatch" style="background:var(--day7)"></span>Day 7</span>
-      <span class="chip" style="cursor:pointer" id="todayBtn">📍 Today</span>
-    </div>
-
-    <div class="grid">
-      <div class="weekdays">
-        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+      <div class="bar-l" style="gap:6px">
+        <button class="btn icon" id="prev" aria-label="Previous"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <button class="btn" id="today">Today</button>
+        <button class="btn icon" id="next" aria-label="Next"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
       </div>
-      <div class="days" id="daysGrid"></div>
     </div>
+    <div class="bar-r">
+      <div class="seg" role="group" aria-label="View">
+        <button id="vWeek" aria-pressed="true">Week</button>
+        <button id="vMonth" aria-pressed="false">Month</button>
+      </div>
+      <div class="seg" role="group" aria-label="Device mode">
+        <button id="mPC" aria-pressed="true">PC</button>
+        <button id="mIOS" aria-pressed="false">iOS</button>
+      </div>
+      <button class="btn" id="theme" aria-label="Switch light or dark mode"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><span id="themeLbl">Dark</span></button>
+      <button class="btn" id="schedBtn" hidden>Schedule</button>
+      <button class="btn" id="signInBtn" hidden>Sign in</button>
+      <button class="who-chip" id="whoChip" hidden title="Sign out"><span class="status"><span class="live"></span></span><span id="whoLbl">Ace</span> · Sign out</button>
+      <button class="btn primary" id="addBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span id="addLbl">Add item</span></button>
+    </div>
+  </header>
 
-    <div class="sync-status" id="syncStatus"></div>
+  <div class="legend">
+    <span><span class="dot act"></span>Extracurricular</span>
+    <span><span class="dot home"></span>Home</span>
+    <span><span class="sw-due"></span><strong style="color:var(--fg)">Green</strong> = school item due</span>
+    <span id="legendDays"></span>
+    <span id="modePill" class="pill" hidden>Parent view · read-only + notes</span>
+    <span class="hint" id="kbHint"><kbd>←</kbd> <kbd>→</kbd> navigate · <kbd>N</kbd> add to today · <kbd>Esc</kbd> close</span>
   </div>
 
-  <div class="modal-backdrop" id="modalBackdrop">
-    <div class="modal">
-      <div class="modal-handle"></div>
-      <button class="close-x" id="closeModalBtn">×</button>
-      <h2 id="modalTitle"></h2>
-      <div id="termBanners"></div>
-      <div id="scheduleWrap"></div>
+  <div class="board" id="board"></div>
+  <div class="status" id="status"><span class="live"></span><span id="statusTxt">Connecting…</span></div>
+</div>
 
-      <div class="notes-section">
-        <h3>Notes</h3>
-        <div id="notesList"></div>
+<div id="sheetRoot"></div>
+<div id="toast" class="toast" hidden></div>
 
-        <div class="add-note-form">
-          <textarea id="noteBody" placeholder="Add a note, e.g. &quot;Alg Quiz&quot;"></textarea>
-          <input id="noteAuthor" type="text" placeholder="Your name (optional)" />
-          <button id="addNoteBtn">Add note</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="schedule-data.js"></script>
-  <script src="config.js"></script>
-  <script src="app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+<script src="../schedule-data.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
